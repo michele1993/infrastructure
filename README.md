@@ -26,6 +26,8 @@ belongs to which job.  This may require you to use `print('...', flush=True)`, t
 
 There is a `--venv` command line argument for specifying the Python virtual environment to activate on the remote node (which tends to be quite difficult if it isn't hard-coded).
 
+To select gpus, use the `--gpumem` option.  It takes a list of `11` (for 1080 and 2080 cards), `24` (for 3090's) and `40` (for 40gb A100s).  You can give a list (e.g. `--gpumem 11 24`).
+
 ## Interactive jobs in Blue Pebble
 To get an interactive job with one GPU, use:
 ```
@@ -47,7 +49,7 @@ I have a hatred of VPNs.  You can login to Blue Pebble without going through the
 ## Disk space in Blue Pebble
 Disk space is tightly constrained (only 20 GB in home).  Use your 1T work directory (in my case `/work/ei19760/`) which has fewer guarantees on backup etc.  These directories can be found in `$HOME` and `$WORK`.  To check your disk space, use
 ```
-quota -s
+user-quota
 ```
 
 ## Time limits for different queues
@@ -63,7 +65,7 @@ Use `lsub` above, then you can just Ctrl-C your unwanted jobs.
 
 Otherwise:
 ```
-qselect -u <username> | xargs qdel
+scancel -u ei19760
 ```
 
 ## Transfering data
@@ -85,8 +87,23 @@ If you don't want that, there are other approaches such as `sshfs` which loads a
 * Select `Remote-SSH: Connect to Host...` from the VSCode Command Palette, then enter user@bp1-login.acrc.bris.ac.uk.
 * Local extensions will not be available on the remote initialisation. Remote and local settings can be synced. Solutions to this and further information on all of the above with FAQ and troubleshooting are detailed in the VS Code [documentation](https://code.visualstudio.com/docs/remote/ssh).
 
-## Github Personal Access Tokens
-The GitHub CLI doesn't work with passwords any more.  There's a bunch of options to get GitHub working again.  I think the easiest is the following:
-* Generate a [personal access token](https://docs.github.com/en/github/authenticating-to-github/keeping-your-account-and-data-secure/creating-a-personal-access-token).  You just need to give "repo" permissions.
-* Edit `.git/config` in the root of your repository.
-* Change the `url` line in `[remote "origin"]` from e.g. `url = https://github.com/username/repo_name.git` to `url = https://username:personal_access_token@github.com/username/repo_name.git`
+## Github SSH.
+Generate a new SSH key:
+```
+ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
+```
+
+Copy `~/.ssh/id_rsa.pub` to your GitHub account settings (https://github.com/settings/keys).
+
+Test SSH key:
+```
+$ ssh -T git@github.com
+Hi <username>! You've successfully authenticated, but GitHub does not provide shell access.
+```
+
+Go to:
+```
+.git/config
+```
+Change the `url` line in `[remote "origin"]` from e.g. `url = https://github.com/username/repo_name.git` to `url = ssh://github.com/username/repo_name.git`.
+
