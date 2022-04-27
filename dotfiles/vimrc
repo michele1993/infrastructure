@@ -20,6 +20,7 @@ Plugin 'gmarik/Vundle.vim'
 call vundle#end()            " required
 filetype plugin indent on    " required
 
+set splitbelow
 set splitright
 
 "split navigations
@@ -46,29 +47,14 @@ au BufNewFile,BufRead *.py
     \ set autoindent
     \ set fileformat=unix
 
-au BufRead,BufNewFile *.py,*.pyw,*.c,*.h match BadWhitespace /\s\+$/
+Plugin 'vim-scripts/indentpython.vim'
+
 
 set encoding=utf-8
 
-Bundle 'Valloric/YouCompleteMe'
-let g:ycm_autoclose_preview_window_after_completion=1
-map <leader>g  :YcmCompleter GoToDefinitionElseDeclaration<CR>
+set nu
 
-"python with virtualenv support
-py3 3
-py3 << EOF
-import os
-import sys
-if 'VIRTUAL_ENV' in os.environ:
-  project_base_dir = os.environ['VIRTUAL_ENV']
-  activate_this = os.path.join(project_base_dir, 'bin/activate_this.py')
-  execfile(activate_this, dict(__file__=activate_this))
-EOF
-
-Plugin 'vim-syntastic/syntastic'
-Plugin 'nvie/vim-flake8'
-let python_highlight_all=1
-syntax on
+syntax enable
 
 Plugin 'jnurmine/Zenburn'
 Plugin 'altercation/vim-colors-solarized'
@@ -81,13 +67,3 @@ else
 endif
 
 call togglebg#map("<F5>")
-
-
-Plugin 'scrooloose/nerdtree'
-let NERDTreeIgnore=['\.pyc$', '\~$'] "ignore files in NERDTree
-
-set nu
-
-Plugin 'tpope/vim-fugitive'
-
-Plugin 'Lokaltog/powerline', {'rtp': 'powerline/bindings/vim/'}
