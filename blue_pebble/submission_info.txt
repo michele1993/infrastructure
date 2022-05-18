@@ -1,0 +1,5 @@
+# To send a job asking to avoid certain gpu, use
+
+sbtach job_name.sh --exclude=bp1-gpu004,bp1-gpu006,bp1-gpu016,bp1-gpu017
+
+# In this case, making sure to use only 3000-series gpus
