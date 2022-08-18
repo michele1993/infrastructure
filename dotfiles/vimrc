@@ -45,9 +45,7 @@ au BufNewFile,BufRead *.py
 
 Plugin 'vim-scripts/indentpython.vim'
 
-Plugin 'jnurmine/Zenburn'
 
-Plugin 'flazz/vim-colorschemes'
 " Plugins needed for Latex:
 Plugin 'sirver/ultisnips'
 
@@ -66,7 +64,12 @@ set encoding=utf-8
 set nu
 syntax enable
 
-syntax on
+Plugin 'jnurmine/Zenburn'
+Plugin 'altercation/vim-colors-solarized'
 
-highlight Normal ctermfg=grey ctermbg=black
-colorscheme molokai
+if has('gui_running')
+	set background=dark
+	colorscheme solarized
+else
+	colorscheme zenburn
+endif
