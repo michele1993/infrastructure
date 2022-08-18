@@ -14,12 +14,6 @@ Plugin 'gmarik/Vundle.vim'
 " add all your plugins here (note older versions of Vundle
 " used Bundle instead of Plugin)
 
-" ...
-
-" All of your Plugins must be added before the following line
-call vundle#end()            " required
-filetype plugin indent on    " required
-
 set splitbelow
 set splitright
 
@@ -28,6 +22,8 @@ nnoremap <C-J> <C-W><C-J>
 nnoremap <C-K> <C-W><C-K>
 nnoremap <C-L> <C-W><C-L>
 nnoremap <C-H> <C-W><C-H>
+
+" Plugins needed for Python
 
 " Enable folding
 set foldmethod=indent
@@ -49,21 +45,28 @@ au BufNewFile,BufRead *.py
 
 Plugin 'vim-scripts/indentpython.vim'
 
+Plugin 'jnurmine/Zenburn'
+
+Plugin 'flazz/vim-colorschemes'
+" Plugins needed for Latex:
+Plugin 'sirver/ultisnips'
+
+let g:UltiSnipsExpandTrigger       = '<Tab>'    " use Tab to expand snippets
+let g:UltiSnipsJumpForwardTrigger  = '<Tab>'    " use Tab to move forward through tabstops
+let g:UltiSnipsJumpBackwardTrigger = '<S-Tab>'  " use Shift-Tab to move backward through tabstops
+
+Plugin 'lervag/vimtex'
+
+
+" All of your Plugins must be added before the following line
+call vundle#end()            " required
+filetype plugin indent on    " required
 
 set encoding=utf-8
-
 set nu
-
 syntax enable
 
-Plugin 'jnurmine/Zenburn'
-Plugin 'altercation/vim-colors-solarized'
+syntax on
 
-if has('gui_running')
-  set background=dark
-  colorscheme solarized
-else
-  colorscheme zenburn
-endif
-
-call togglebg#map("<F5>")
+highlight Normal ctermfg=grey ctermbg=black
+colorscheme molokai
