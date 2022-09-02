@@ -2,7 +2,11 @@
 
 ## Running jobs in Blue Pebble
 
-Making a job script for each run is extremely tedious.  The files in `blue_pebble/bin` automate this.
+Making a job script for each run is extremely tedious.  The files in `blue_pebble/bin` automate this.  To use these, you need to first download this repo (I downloaded it to `~/git/infrastructure`), then add `blue_pebble/bin` to the path.  You need to add:
+```
+export PATH="$PATH:/user/home/<userid>/git/infrastructure/blue_pebble/bin"
+```
+to `.bash_profile`.  (You will need to log out then log back in to load the new path).
 
 `lscript` prints a job script to STDOUT based on command line arguments, for instance for a job with 1 CPU, 1 GPU and 22 GB of memory, we would use,
 ```
@@ -31,13 +35,17 @@ To select gpus, use the `--gpumem` option.  It takes a list of `11` (for 1080 an
 ## Interactive jobs in Blue Pebble
 To get an interactive job with one GPU, use:
 ```
-lint -g 1
+lint -c 1 -g 1 -m 22 -t 12
 ```
 This should only be used for debugging code (not for running it).  And you should be careful to close it after you're done.
 
 ## Recommended resource limits
-The standard GPU nodes come with 8 CPUs, 96 GB of memory, and 4 GPUs.
-Therefore for maximum usage of the GPUs, it makes sense to use 1 or 2 CPUs and up to 22 GB of memory per CPU (to use some for the system).
+| Card | card memory| system memory per GPU  | CPUs per GPU |
+| ------ | ----- | ------------- | ---- |
+| 1080/2080 | 11 | 22 | 2 |
+| 3090 | 24 | 62 | 2 |
+| A100 | 40 | 124 | 16 |
+
 
 ## Logging in to Blue Pebble
 I have a hatred of VPNs.  You can login to Blue Pebble without going through the VPN using `local_bin/bp_ssh`. (You'll need to update it with your username though!)
@@ -87,7 +95,27 @@ If you don't want that, there are other approaches such as `sshfs` which loads a
 * Select `Remote-SSH: Connect to Host...` from the VSCode Command Palette, then enter user@bp1-login.acrc.bris.ac.uk.
 * Local extensions will not be available on the remote initialisation. Remote and local settings can be synced. Solutions to this and further information on all of the above with FAQ and troubleshooting are detailed in the VS Code [documentation](https://code.visualstudio.com/docs/remote/ssh).
 
-## Github SSH.
+## Pushing/pulling to GitHub without a password:
+* Generate a "Personal Access Token" with repo permissions + no expiration (you can always delete the token manually through the web interface): (https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token)
+* Use that token in place of a password, e.g.
+```
+~/git/llm_ppl $ git pull
+Username for 'https://github.com': LaurenceA
+Password for 'https://LaurenceA@github.com':
+```
+* You can save the PAT using:
+```
+git config --global credential.helper store
+```
+* This will save your token in plaintext in `~/.git-credentials`.  So you may want to check permissions on that file...
+
+#### Deprecated: use an SSH key.
+
+Generate a new SSH key:
+```
+ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
+```
+
 Generate a new SSH key:
 ```
 ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
@@ -107,3 +135,7 @@ Go to:
 ```
 Change the `url` line in `[remote "origin"]` from e.g. `url = https://github.com/username/repo_name.git` to `url = ssh://github.com/username/repo_name.git`.
 
+## Updating paths / installing modules
+You can browse available modules through `module avail`, and install a module through `module add ...`.  This is mainly useful for very fundamental things such as `gcc`.  For Python, I usually install my own Anaconda in the `$HOME` or `$WORK` directory.
+
+If you want to install a module by default, use `~/.bashrc`, _not_ `~/.bash_profile`.  (It seems that `.bashrc` is run on interactive jobs, but `.bash_profile` isn't).
