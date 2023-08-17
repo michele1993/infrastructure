@@ -1,0 +1,3 @@
+#!/bin/bash
+
+scp -r -J px19783@seis.bris.ac.uk px19783@bp1-login01b.acrc.bris.ac.uk:/user/work/px19783/code_repository$1 $2 
