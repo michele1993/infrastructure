@@ -1,6 +1,10 @@
 set nocompatible              " required
 filetype off                  " required
 
+set wrap
+set linebreak
+set nolist  " list disables linebreak
+
 " set the runtime path to include Vundle and initialize
 set rtp+=~/.vim/bundle/Vundle.vim
 call vundle#begin()
@@ -26,22 +30,26 @@ nnoremap <C-H> <C-W><C-H>
 " Plugins needed for Python
 
 " Enable folding
-set foldmethod=indent
-set foldlevel=99
+"set foldmethod=indent
+"set foldlevel=99
 
 " Enable folding with the spacebar
 nnoremap <space> za
 
 Plugin 'tmhedberg/SimpylFold'
 
+set encoding=utf-8
+" Indentation settings:
 au BufNewFile,BufRead *.py
-    \ set tabstop=4
-    \ set softtabstop=4
-    \ set shiftwidth=4
-    \ set textwidth=79
-    \ set expandtab
-    \ set autoindent
-    \ set fileformat=unix
+    \  set tabstop=4
+    \| set shiftwidth=4
+    \| set textwidth=0 
+    \| set expandtab
+    \| set autoindent
+    \| set fileformat=unix
+    \| set wrap
+    \| set linebreak
+    \| set nolist  " list disables linebreak	
 
 Plugin 'vim-scripts/indentpython.vim'
 
@@ -60,12 +68,18 @@ Plugin 'lervag/vimtex'
 call vundle#end()            " required
 filetype plugin indent on    " required
 
-set encoding=utf-8
 set nu
 syntax enable
 
 Plugin 'jnurmine/Zenburn'
 Plugin 'altercation/vim-colors-solarized'
+
+
+" Setting for YouCompleteMe for Python
+Plugin 'Valloric/YouCompleteMe'
+
+let g:ycm_autoclose_preview_window_after_completion=1
+map <leader>g  :YcmCompleter GoToDefinitionElseDeclaration<CR>
 
 if has('gui_running')
 	set background=dark

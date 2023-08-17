@@ -1,6 +1,6 @@
 # infrastructure
 
-## Running jobs in Blue Pebble
+# Running jobs in Blue Pebble
 
 Making a job script for each run is extremely tedious.  The files in `blue_pebble/bin` automate this.  To use these, you need to first download this repo (I downloaded it to `~/git/infrastructure`), then add `blue_pebble/bin` to the path.  You need to add:
 ```
@@ -10,47 +10,66 @@ to `.bash_profile`.  (You will need to log out then log back in to load the new 
 
 `lscript` prints a job script to STDOUT based on command line arguments, for instance for a job with 1 CPU, 1 GPU and 22 GB of memory, we would use,
 ```
-lscript -c 1 -g 1 -m 22 --cmd python my_training_script.py --my_command_line_arg
+lscript -c 1 -g 1 -m 22 -a hpc_project_code -q queue_name --cmd python my_training_script.py --my_command_line_arg
 ```
 where everything that comes after `--cmd` is the run command.  If you need to edit the submission script (e.g. to add extra modules), this is the file to change!
 
 To automatically submit that job, we'd use `lbatch`,
 ```
-lbatch -c 1 -g 1 -m 22 --cmd python my_training_script.py --my_command_line_arg
+lbatch -c 1 -g 1 -m 22 -a hpc_project_code -q queue_name --cmd python my_training_script.py --my_command_line_arg
 ```
 Note that I have also included `lsub`, which blocks (waits until the job is completed).  This is useful in some ways (because it makes it easy to kill jobs when you realise something isn't right).  But you need to start the jobs inside `tmux` or `screen`, otherwise the jobs will be terminated when you loose your connection.
 
-Unfortunately, these scripts tend to produce a huge number of files that look like `STDIN.o12389412`.  To rectify that, we use the `--autoname` argument,
+These scripts tend to produce a huge number of files that look like `STDIN.o12389412`.  To rectify that, we use the `--autoname` argument,
 ```
-lbatch -c 1 -g 1 -m 22 --autoname --cmd python my_training_script.py output_filename --my_command_line_arg
+lbatch -c 1 -g 1 -m 22 -a hpc_project_code -q queue_name --autoname --cmd python my_training_script.py output_filename --my_command_line_arg
 ```
 `--autoname` assumes that the job's output filename comes in third place (after `python` and `my_training_script.py`),
 and produces logs with the name: `output_filename.o`, which tends to be much more helpful for working out which log-file
 belongs to which job.  This may require you to use `print('...', flush=True)`, to make sure that the printed output isn't buffered.
 
-There is a `--venv` command line argument for specifying the Python virtual environment to activate on the remote node (which tends to be quite difficult if it isn't hard-coded).
+There is a `--venv` command line argument for specifying the Python virtual environment to activate on the remote node (which tends to be quite difficult if it isn't hard-coded). Or alternatively you can specify the name of a conda environment with `--conda-env`.
 
-To select gpus, use the `--gpumem` option.  It takes a list of `11` (for 1080 and 2080 cards), `24` (for 3090's) and `40` (for 40gb A100s).  You can give a list (e.g. `--gpumem 11 24`).
+To specify your HPC project code use the `-a` option. Jobs submitted on Blue Pebble will not run without a project code. To get a your project code, ask your PI.  Additionally, accounts can only run with certain project codes.  To see what project code(s) are associated with your account, use 
+```
+sacctmgr show user withassoc format=account where user=$USER
+```
+To get a project code added to your account, email `hpc-help@bristol.ac.uk`.
+
+To submit an array job, specify the appropriate array range as a string argument to `--array-range` and replace one of your command inputs with ARRAY_ID. E.g. to run my_training_script.py in parallel with inputs in the range 0 to 10 in intervals of 2
+```
+lbatch -a hpc_project_code -q queue_name --array-range 0-10:2 --cmd python my_training_script.py ARRAY_ID
+```
 
 ## Interactive jobs in Blue Pebble
 To get an interactive job with one GPU, use:
 ```
-lint -c 1 -g 1 -m 22 -t 12
+lint -c 1 -g 1 -m 22 -t 12 -a hpc_project_code -q queue_name
 ```
 This should only be used for debugging code (not for running it).  And you should be careful to close it after you're done.
 
-## Recommended resource limits
+## Choosing different cards, and the corresponding recommended CPU/memory resources (CNU nodes only)
+To run a job with only a specific type of GPU, use:
+```
+lint -c 1 -g 1 -m 22 -t 12 -a hpc_project_code -q queue_name --gputype rtx_2080 rtx_3090
+```
+(here, a 2080 or a 3090).
+
+We have 40 and 80 GB A100's, but the schduler can't tell the difference.  To exclude the 40 GB cards, use `--exclude_40G_A100`
+
+To make full use of all the GPUs on a system, it is recommended that you only use the following system memory/CPUs per GPU:
 | Card | card memory| system memory per GPU  | CPUs per GPU |
 | ------ | ----- | ------------- | ---- |
-| 1080/2080 | 11 | 22 | 2 |
-| 3090 | 24 | 62 | 2 |
-| A100 | 40 | 124 | 16 |
+| `rtx_2080` | 11 | 22 | 2 |
+| `rtx_3090` | 24 | 62 | 2 |
+| `A100` | 40/80 | 124 | 16 |
 
+# Notes
 
 ## Logging in to Blue Pebble
 I have a hatred of VPNs.  You can login to Blue Pebble without going through the VPN using `local_bin/bp_ssh`. (You'll need to update it with your username though!)
 
-## Guides
+## Jupyter in Blue Pebble
 
 * [Running Jupyter in Blue Pebble](instructions/jupyter-on-blue-pebble.md)
 
@@ -67,6 +86,11 @@ The time limits for various queues are:
 * vlong: 72 hours (cpu)
 * gpu: 72 hours
 * gpushort: 3 hours
+
+## Seeing your queued jobs
+You can use `sacct` to get an overview of all jobs you have run / queued today, including which are queued, running, completed, or failed.
+
+You can also use `squeue -u <username>`, but it won't show you completed / failed jobs.
 
 ## Deleting all your jobs
 Use `lsub` above, then you can just Ctrl-C your unwanted jobs.
@@ -95,6 +119,8 @@ If you don't want that, there are other approaches such as `sshfs` which loads a
 * Select `Remote-SSH: Connect to Host...` from the VSCode Command Palette, then enter user@bp1-login.acrc.bris.ac.uk.
 * Local extensions will not be available on the remote initialisation. Remote and local settings can be synced. Solutions to this and further information on all of the above with FAQ and troubleshooting are detailed in the VS Code [documentation](https://code.visualstudio.com/docs/remote/ssh).
 
+Note that you can also access Jupyter notebooks on VSCode, which provides useful things like syntax checking, debugging and other useful code tools inside notebooks. Plus it also removes the need to faff around with port forwarding if you have set up your Remote-SSH as above. To do more intensive jupyter notebook things in this way, you can connect to a remote jupyter server (i.e. on a compute node), but you need to set it up in a particular way, see [Running Jupyter in Blue Pebble](instructions/jupyter-on-blue-pebble.md)
+
 ## Pushing/pulling to GitHub without a password:
 * Generate a "Personal Access Token" with repo permissions + no expiration (you can always delete the token manually through the web interface): (https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token)
 * Use that token in place of a password, e.g.
@@ -109,33 +135,78 @@ git config --global credential.helper store
 ```
 * This will save your token in plaintext in `~/.git-credentials`.  So you may want to check permissions on that file...
 
-#### Deprecated: use an SSH key.
-
-Generate a new SSH key:
-```
-ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
-```
-
-Generate a new SSH key:
-```
-ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
-```
-
-Copy `~/.ssh/id_rsa.pub` to your GitHub account settings (https://github.com/settings/keys).
-
-Test SSH key:
-```
-$ ssh -T git@github.com
-Hi <username>! You've successfully authenticated, but GitHub does not provide shell access.
-```
-
-Go to:
-```
-.git/config
-```
-Change the `url` line in `[remote "origin"]` from e.g. `url = https://github.com/username/repo_name.git` to `url = ssh://github.com/username/repo_name.git`.
-
 ## Updating paths / installing modules
 You can browse available modules through `module avail`, and install a module through `module add ...`.  This is mainly useful for very fundamental things such as `gcc`.  For Python, I usually install my own Anaconda in the `$HOME` or `$WORK` directory.
 
 If you want to install a module by default, use `~/.bashrc`, _not_ `~/.bash_profile`.  (It seems that `.bashrc` is run on interactive jobs, but `.bash_profile` isn't).
+
+## Viewing queued jobs
+SLURM comes with a built-in command to view the queue of jobs: `squeue`.
+Some useful parameters for this:
+- `--me`: Only show the current user's jobs
+- `-t, --states=<state_list>`: Only show jobs of certain states. States include `pending`, `running` and `completing`. For example `squeue -t running` will only show running jobs.
+
+Full documentation is [here](https://slurm.schedmd.com/squeue.html).
+
+## Uploading to arXiv
+
+* Check that there aren't any wrong / soon-to-be-outdated notes from the template in the compiled pdf (e.g. "Published in <conference>" or "Preprint; under review at <conference>").  You can remove these relatively easily by editting the style file (just search for the offending string).  To avoid confusion later, you should do these edits in a new style file, e.g. `<conference>_arxiv.sty`.
+* Check there aren't any extra files or embarassing comments in the Overleaf.
+* Download a zip from Overleaf (Submit -> ArXiv).  MacOS, may automatically unzip the file, in which case you have to zip it again (Finder -> Right click on folder -> Compress "<filename>").
+* You can upload the entire zip to arXiv.
+
+## Install bitsandbytes on BluePebble
+  
+Adam had some difficulties in installing [bitsandbytes](https://github.com/TimDettmers/bitsandbytes) on the cluster.  Here is the instructions he followed, as of 9th June 2023 (I expect this to go out of date quite quickly). He installed it in an interactive job on GPU node, but it should also work on login node.
+
+bitsandbytes has trouble working on systems with multiple cuda installed, so we need to install from source and specify the version of cuda, and we need to load modules and export paths on BluePebble
+
+1. create conda envs and install packages as usual, activate conda env, load modules and export paths, which are necessary for installation from source (maybe some paths are redundant?)
+
+```
+module add lang/cuda/11.6
+module add lang/cuda/12.0.0-gcc-9.1.0
+module load tools/git/2.35.1
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib/nvidia
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(conda info --envs | grep '*' | awk '{print $3}')/lib
+```
+For instance, if you had anaconda installed in `/user/work/<username>/anaconda3/` that final command would expand to:
+```
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/user/work/<username>/anaconda3/envs/llm/lib/
+```
+  
+2. clone bitsandbytes from source, and go into the source directory:
+
+```
+git clone https://github.com/timdettmers/bitsandbytes.git
+cd bitsandbytes
+```
+  
+3. Modify the Makefile in the bitsandbytes repo, by changing 'GPP:= /usr/bin/g++' to 'GPP:= g++'.  This can be done automatically using:
+```
+sed -i "s/^GPP.*/GPP := g++/" bitsandbytes/Makefile
+```
+
+4. install bitsandbytes
+
+```
+CUDA_VERSION=116 make cuda11x
+python setup.py install
+```
+  
+5. Every time before running we need to load cuda module and export paths
+```
+module add lang/cuda/11.6
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib/nvidia
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(conda info --envs | grep '*' | awk '{print $3}')/lib
+```
+## Getting Laurence's external keyboard to behave like the Apple keyboard.
+
+In the keyboard setup wizard, when it asks for the "key immediately to the right of the left shift", instead press the key in top-right, just underneath escape.  The keyboard type should be the default (ISO).  If you need to rerun the keyboard setup wizard, first delete `/Library/Preferences/com.apple.keyboardtype.plist`, then reboot.
+/Library/Preferences/com.apple.keyboardtype.plist
+
+## Associate status mailbox
+
+`engf-honstaff@bristol.ac.uk`
+
+`honorary-associate-enquiries@bristol.ac.uk`
